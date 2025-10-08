@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "market_server": {
+      "httpUrl": "http://localhost:8080"
+    }
+  }
+}
