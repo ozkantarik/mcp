@@ -2,6 +2,10 @@
   "mcpServers": {
     "market_server": {
       "httpUrl": "http://localhost:8080"
+    },
+    "orchestrator": {
+      "command": "python3 /home/tarik/git/mcp/mcp_server.py",
+      "args": []
     }
   }
 }
