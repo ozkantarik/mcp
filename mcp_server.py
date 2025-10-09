@@ -2,34 +2,45 @@ import http.server
 import socketserver
 import json
 import datetime
+import requests
 
 PORT = 8080
-MARKET_DATA_FILE = "market_conditions.txt"
+# Switched to the more reliable Binance public API endpoint
+API_URL = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
 
-class CombinedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+class LiveDataHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
+            market_data_content = ""
+            try:
+                response = requests.get(API_URL, timeout=5)
+                response.raise_for_status()
+                
+                # Adapted parsing for Binance API response: {"symbol":"BTCUSDT","price":"..."}
+                api_data = response.json()
+                price = float(api_data['price'])
+                
+                market_data_content = f"Live Bitcoin (BTC) Price: ${price:,.2f} (from Binance)"
+
+            except requests.exceptions.RequestException as e:
+                market_data_content = f"ERROR: Could not fetch live market data. Network error: {e}"
+            except (KeyError, TypeError, ValueError) as e:
+                market_data_content = f"ERROR: Could not parse API response. Invalid data format: {e}"
+
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
 
-            try:
-                with open(MARKET_DATA_FILE, "r") as f:
-                    market_conditions = f.read().strip()
-            except FileNotFoundError:
-                market_conditions = "ERROR: Market data file not found."
-            except Exception as e:
-                market_conditions = f"ERROR: Could not read market data: {e}"
-
             response_data = {
                 "context": [
                     {
-                        "title": "System Status",
-                        "content": f"The current time is {datetime.datetime.utcnow().isoformat()}"
+                        "title": "System Time",
+                        # Fixed the DeprecationWarning by using timezone-aware UTC datetime
+                        "content": f"{datetime.datetime.now(datetime.timezone.utc).isoformat()}"
                     },
                     {
-                        "title": "Live Market Conditions",
-                        "content": market_conditions
+                        "title": "Live BTC Market Data",
+                        "content": market_data_content
                     }
                 ]
             }
@@ -39,6 +50,7 @@ class CombinedHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
 
-with socketserver.TCPServer(("", PORT), CombinedHttpRequestHandler) as httpd:
-    print("MCP server starting at port", PORT)
+with socketserver.TCPServer(("", PORT), LiveDataHttpRequestHandler) as httpd:
+    print(f"Live Market Data MCP server starting at port {PORT}")
+    print(f"Fetching data from: {API_URL}")
     httpd.serve_forever()
