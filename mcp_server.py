@@ -9,7 +9,7 @@ from fastmcp import FastMCP
 # Initialize FastMCP Server
 mcp = FastMCP(
     "PPCCenter MCP Server",
-    description="Bridge Amazon Ads performance (Spend, ACoS, Conversions) and SoStocked inventory metrics directly into AI clients."
+    description="Bridge Amazon Ads performance (Spend, ACoS, Conversions) and FBA inventory metrics directly into AI clients."
 )
 
 # Setup logging to stderr (logging to stdout corrupts JSON-RPC stdio transport)
@@ -122,7 +122,7 @@ def update_campaign_budget(campaign_id: str, new_budget: float) -> str:
 @mcp.tool()
 def get_inventory_alerts(days_threshold: int = 30) -> str:
     """
-    Retrieve products from SoStocked where the stock days remaining falls below the specified threshold.
+    Retrieve products from FBA inventory where the stock days remaining falls below the specified threshold.
     """
     logger.info(f"Invoking get_inventory_alerts with threshold: {days_threshold}")
     alerts = []
@@ -135,7 +135,7 @@ def get_inventory_alerts(days_threshold: int = 30) -> str:
     if not alerts:
         return f"✅ Healthy: No inventory SKU days of stock fall below {days_threshold} days."
 
-    lines = ["### ⚠️ SoStocked Stock Alerts (Threshold: < {} Days)".format(days_threshold)]
+    lines = ["### ⚠️ FBA Stock Alerts (Threshold: < {} Days)".format(days_threshold)]
     for item, days in alerts:
         status_flag = "🚨 RESTOCK CRITICAL" if days <= item["lead_time_days"] else "⚠️ LOW STOCK"
         lines.append(
